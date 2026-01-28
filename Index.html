@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบรางวัลเลขสลากการกุศล</title>
+    <!-- Tailwind CSS CDN Warning is unavoidable for single-file GAS development. It does not break the code. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Font Kanit for Thai readability and professional look */
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-color: #166534; /* Darker Green (Emerald 800) */
+            --secondary-color: #d1fae5; /* Light Green (Emerald 100) */
+            --text-color: #052e16; /* Very Dark Green */
+        }
+
+        body { 
+            font-family: 'Kanit', sans-serif;
+            background-color: #f0fdf4; /* Very Light Green */
+            color: var(--text-color);
+        }
+        
+        .header {
+            background-color: var(--primary-color);
+        }
+        
+        .sidebar-menu a {
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .main-content { transition: margin-left .5s; }
+        .sidebar { transition: width .5s; }
+        .sidebar-closed { width: 0; }
+        .sidebar-open { width: 250px; }
+        .content-shifted { margin-left: 250px; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="app-container" class="min-h-screen flex">
+        
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar sidebar-closed fixed top-0 left-0 h-full bg-[--primary-color] text-white z-20 overflow-y-auto overflow-x-hidden md:block md:w-[250px]">
+            <div class="p-4 text-center">
+                <h2 class="text-2xl font-semibold border-b border-green-700 pb-2">เมนูระบบ</h2>
+            </div>
+            <nav id="sidebar-nav" class="mt-5 sidebar-menu">
+                <!-- Nav links will be injected here -->
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="main-content flex-1 flex flex-col min-h-screen md:ml-[250px]">
+            <!-- Top Navbar -->
+            <header class="header shadow-md sticky top-0 z-10">
+                <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                    <div class="flex items-center">
+                         <button id="menu-toggle" class="text-white text-2xl md:hidden"><i class="fas fa-bars"></i></button>
+                         <h1 class="text-xl font-bold text-white ml-4 hidden md:block">สลากการกุศล</h1>
+                    </div>
+                    <div id="user-info" class="hidden text-right text-white">
+                        <p class="text-sm font-semibold">สวัสดี, <span id="user-name-display"></span></p>
+                        <p class="text-xs">เครดิต: <span id="user-credit-display">0.00</span> บาท</p>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main id="page-content" class="flex-1 container mx-auto p-4 md:p-6">
+                
+                <!-- Login Page -->
+                <div id="login-page" class="page">
+                    <div class="max-w-md mx-auto bg-white rounded-xl shadow-2xl p-8 mt-10 md:mt-20">
+                        <h2 class="text-3xl font-bold text-center text-[--primary-color] mb-8">เข้าสู่ระบบ</h2>
+                        <form id="login-form">
+                            <div class="mb-5">
+                                <label for="login-username" class="block text-gray-700 font-medium mb-2">ชื่อผู้ใช้งาน</label>
+                                <input type="text" id="login-username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-200" required>
+                            </div>
+                            <div class="mb-6">
+                                <label for="login-password" class="block text-gray-700 font-medium mb-2">รหัสผ่าน</label>
+                                <input type="password" id="login-password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-200" required>
+                            </div>
+                            <button type="submit" class="w-full bg-green-700 text-white py-3 rounded-lg text-lg font-semibold hover:bg-green-800 transition duration-300 shadow-md">เข้าสู่ระบบ</button>
+                        </form>
+                        <p class="text-center mt-6 text-sm">ยังไม่มีบัญชี? <a href="#" id="show-register-link" class="text-green-600 hover:text-green-700 font-bold">สมัครสมาชิกที่นี่</a></p>
+                    </div>
+                </div>
+
+                <!-- Register Page -->
+                <div id="register-page" class="page hidden">
+                    <div class="max-w-md mx-auto bg-white rounded-xl shadow-2xl p-8 mt-10">
+                        <h2 class="text-3xl font-bold text-center text-[--primary-color] mb-6">สมัครสมาชิก</h2>
+                        <form id="register-form">
+                            <input type="text" name="username" placeholder="Username" class="w-full mb-4 p-3 border rounded-lg focus:ring-2 focus:ring-green-400" required>
+                            <input type="password" name="password" placeholder="รหัสผ่าน" class="w-full mb-4 p-3 border rounded-lg focus:ring-2 focus:ring-green-400" required>
+                            <input type="text" name="fullName" placeholder="ชื่อ-สกุล" class="w-full mb-4 p-3 border rounded-lg focus:ring-2 focus:ring-green-400" required>
+                            <input type="tel" name="phone" placeholder="เบอร์โทรศัพท์" class="w-full mb-4 p-3 border rounded-lg focus:ring-2 focus:ring-green-400" required>
+                            <input type="text" name="bankName" placeholder="ชื่อธนาคารรับรางวัล" class="w-full mb-4 p-3 border rounded-lg focus:ring-2 focus:ring-green-400" required>
+                            <input type="text" name="bankAccount" placeholder="เลขบัญชีธนาคารรับรางวัล" class="w-full mb-4 p-3 border rounded-lg focus:ring-2 focus:ring-green-400" required>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 font-medium mb-2">รูปถ่ายบัตรประชาชน (ไม่บังคับ)</label>
+                                <input type="file" name="idCardPhoto" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer">
+                            </div>
+                            <button type="submit" class="w-full bg-green-700 text-white py-3 rounded-lg text-lg font-semibold hover:bg-green-800 shadow-md">สมัครสมาชิก</button>
+                        </form>
+                        <p class="text-center mt-4 text-sm">มีบัญชีแล้ว? <a href="#" id="show-login-link" class="text-green-600 hover:text-green-700 font-bold">เข้าสู่ระบบที่นี่</a></p>
+                    </div>
+                </div>
+
+                <!-- Member Dashboard Container -->
+                <div id="member-dashboard-page" class="page hidden">
+                    <h2 class="text-2xl font-bold text-[--primary-color] mb-4">หน้าหลักสมาชิก</h2>
+                    <div id="member-content-area" class="bg-white p-6 rounded-xl shadow-lg"></div>
+                </div>
+
+                <!-- Admin Dashboard Container -->
+                <div id="admin-dashboard-page" class="page hidden">
+                    <h2 class="text-2xl font-bold text-[--primary-color] mb-4">หน้าหลักผู้ดูแลระบบ</h2>
+                     <div id="admin-content-area" class="bg-white p-6 rounded-xl shadow-lg">
+                        <p>ยินดีต้อนรับผู้ดูแลระบบ! กรุณาเลือกเมนูที่ต้องการจัดการจากด้านข้าง</p>
+                     </div>
+                </div>
+                
+            </main>
+        </div>
+    </div>
+
+<script>
+    // --- State Management ---
+    const AppState = {
+        isLoggedIn: false,
+        userRole: null, 
+        userInfo: null,
+        // DANGER: Using ScriptApp.getService().getUrl() directly in HTML template
+        // is the source of the SyntaxError. We will set this in Code.gs if needed.
+        // For now, it's removed from here to ensure the code loads.
+    };
+
+    function formatTimestamp(isoString) {
+        if (!isoString) return 'N/A';
+        try {
+            const date = new Date(isoString);
+            if (isNaN(date.getTime())) return isoString;
+            const options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            return date.toLocaleDateString('th-TH', options);
+        } catch (e) { return isoString; }
+    }
+
+    function showSwalLoading(title = 'กำลังดำเนินการ...', allowOutsideClick = false) {
+        Swal.fire({ title: title, allowOutsideClick: allowOutsideClick, didOpen: () => Swal.showLoading() });
+    }
+    
+    // --- Page Navigation ---
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+        const targetPage = document.getElementById(pageId);
+        if (targetPage) {
+            targetPage.classList.remove('hidden');
+        } else {
+            console.error(`Page with id "${pageId}" not found.`);
+        }
+    }
+
+    // --- UI Updates ---
+    function updateUI() {
+        const sidebar = document.getElementById('sidebar');
+        
+        if (AppState.isLoggedIn) {
+            document.getElementById('user-info').classList.remove('hidden');
+            document.getElementById('user-name-display').textContent = AppState.userInfo?.name || AppState.userRole.toUpperCase();
+            document.getElementById('user-credit-display').textContent = parseFloat(AppState.userInfo?.credit || 0).toFixed(2);
+            
+            sidebar.classList.remove('sidebar-closed');
+            if (window.innerWidth >= 768) {
+               sidebar.classList.add('sidebar-open');
+            }
+
+            buildSidebarMenu();
+
+            if (AppState.userRole === 'admin') {
+                showPage('admin-dashboard-page');
+                loadAdminContent('manage-members'); // Default admin view
+            } else {
+                showPage('member-dashboard-page');
+                loadMemberContent('buy-lottery'); // Default member view
+            }
+        } else {
+            document.getElementById('user-info').classList.add('hidden');
+            showPage('login-page');
+            sidebar.classList.add('sidebar-closed');
+            sidebar.classList.remove('sidebar-open');
+        }
+    }
+    
+    function createSidebarLink(text, iconClass, contentLoader) {
+        const a = document.createElement('a');
+        a.href = '#';
+        a.className = 'flex items-center px-4 py-3 text-white hover:bg-green-700';
+        a.innerHTML = `<i class="fas ${iconClass} w-6 text-center"></i><span class="ml-3">${text}</span>`;
+        a.onclick = (e) => {
+            e.preventDefault();
+            contentLoader();
+            // Close sidebar on mobile after clicking
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.remove('sidebar-open');
+            }
+        };
+        return a;
+    }
+
+    function buildSidebarMenu() {
+        const nav = document.getElementById('sidebar-nav');
+        nav.innerHTML = '';
+        
+        const logoutLink = createSidebarLink('ออกจากระบบ', 'fa-sign-out-alt', handleLogout);
+
+        if (AppState.userRole === 'member') {
+            nav.appendChild(createSidebarLink('ซื้อเลขรางวัล', 'fa-ticket-alt', () => loadMemberContent('buy-lottery')));
+            nav.appendChild(createSidebarLink('เติมเครดิต', 'fa-wallet', () => loadMemberContent('deposit-credit')));
+            nav.appendChild(createSidebarLink('ถอนเครดิต', 'fa-money-bill-wave', () => loadMemberContent('withdraw-credit')));
+            nav.appendChild(createSidebarLink('ประวัติซื้อ', 'fa-history', () => loadMemberContent('purchase-history')));
+            nav.appendChild(createSidebarLink('ประวัติทำรายการ', 'fa-exchange-alt', () => loadMemberContent('transaction-history')));
+        } else if (AppState.userRole === 'admin') {
+            nav.appendChild(createSidebarLink('จัดการสมาชิก', 'fa-users', () => loadAdminContent('manage-members')));
+            nav.appendChild(createSidebarLink('อนุมัติเติมเงิน', 'fa-check-circle', () => loadAdminContent('approve-deposits')));
+            nav.appendChild(createSidebarLink('อนุมัติถอนเงิน', 'fa-minus-circle', () => loadAdminContent('approve-withdrawals')));
+            // --- ✨ ADD THESE TWO LINES ---
+            nav.appendChild(createSidebarLink('ประวัติเติมเงิน', 'fa-clock-rotate-left', () => loadAdminContent('deposit-history')));
+            nav.appendChild(createSidebarLink('ประวัติถอนเงิน', 'fa-history', () => loadAdminContent('withdrawal-history')));
+// --- END ---
+          
+            nav.appendChild(createSidebarLink('จัดการบัญชีธนาคาร', 'fa-university', () => loadAdminContent('manage-banks')));
+             // --- ✨ ADD THIS LINE ---
+            nav.appendChild(createSidebarLink('จัดการประเภทสลาก', 'fa-tags', () => loadAdminContent('manage-lottery-types')));
+// --- END ---
+            nav.appendChild(createSidebarLink('ประกาศผลรางวัล', 'fa-trophy', () => loadAdminContent('announce-winners')));
+            nav.appendChild(createSidebarLink('รายงานสมาชิก', 'fa-chart-bar', () => loadAdminContent('member-report')));
+        }
+        
+        nav.appendChild(logoutLink);
+    }
+    
+   function loadMemberContent(contentType) {
+    const area = document.getElementById('member-content-area');
+    area.innerHTML = '<div class="text-center p-8"><i class="fas fa-spinner fa-spin text-3xl text-green-700"></i><p class="mt-2">กำลังโหลด...</p></div>';
+    
+    const userId = AppState.userInfo?.id;
+    switch(contentType) {
+        case 'buy-lottery':
+            google.script.run
+                .withSuccessHandler(renderBuyLottery)
+                .withFailureHandler(err => { area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`; })
+                .getLotteryTypes();
+            break;
+        case 'deposit-credit':
+            google.script.run
+                .withSuccessHandler(renderDepositForm)
+                .withFailureHandler(err => { area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`; })
+                .getBankAccounts();
+            break;
+        case 'withdraw-credit':
+            renderWithdrawalForm(area, userId, AppState.userInfo.credit);
+            break;
+        case 'purchase-history': // ✨ จุดที่แก้ไข
+            google.script.run
+                .withSuccessHandler(data => renderHistoryTable(area, data, 'Purchases'))
+                .withFailureHandler(err => { area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`; })
+                .getMemberPurchaseHistory(userId); // <-- เรียกใช้ฟังก์ชันใหม่
+            break;
+        case 'transaction-history':
+            google.script.run
+                .withSuccessHandler(data => renderHistoryTable(area, data, 'Transactions'))
+                .withFailureHandler(err => { area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`; })
+                .getMemberHistory(userId); // <-- ยังคงใช้ฟังก์ชันเดิมสำหรับดูประวัติเติม/ถอน
+            break;
+        default:
+            area.innerHTML = `<p>ไม่พบเนื้อหา</p>`;
+    }
+}
+   function loadAdminContent(contentType) {
+    const area = document.getElementById('admin-content-area');
+    area.innerHTML = '<div class="text-center p-8"><i class="fas fa-spinner fa-spin text-3xl text-green-700"></i><p class="mt-2">กำลังโหลด...</p></div>';
+    switch(contentType) {
+        case 'manage-members':
+            google.script.run.withSuccessHandler(renderMembersTable).withFailureHandler(err => { area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`; }).getAllMembers();
+            break;
+        case 'approve-deposits':
+            google.script.run.withSuccessHandler(renderDepositsTable).withFailureHandler(err => { area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`; }).getPendingDeposits();
+            break;
+        case 'approve-withdrawals':
+            google.script.run.withSuccessHandler(renderWithdrawalsTable).withFailureHandler(err => { area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`; }).getPendingWithdrawals();
+            break;
+            // --- ✨ ADD THESE TWO CASES ---
+    case 'deposit-history':
+        google.script.run.withSuccessHandler(renderDepositHistoryTable).withFailureHandler(err => { area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`; }).getDepositHistory();
+        break;
+    case 'withdrawal-history':
+        google.script.run.withSuccessHandler(renderWithdrawalHistoryTable).withFailureHandler(err => { area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`; }).getWithdrawalHistory();
+        break;
+    // --- END ---
+        case 'manage-banks':
+    google.script.run
+        .withSuccessHandler(renderBankAccounts)
+        .withFailureHandler(err => { area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`; })
+        .getBankAccounts(true); // ✨ Add true here
+    break;
+    // --- ✨ ADD THIS CASE ---
+case 'manage-lottery-types':
+    google.script.run.withSuccessHandler(renderLotteryTypesManager).getLotteryTypes();
+    break;
+// --- END ---
+        case 'announce-winners': // ✨ REVISED
+            // Load both lottery types for the form and past announcements for the table
+            Promise.all([
+                new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getLotteryTypes()),
+                new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getPastAnnouncements())
+            ]).then(([lotteryTypes, pastAnnouncements]) => {
+                renderAnnounceWinnersForm(lotteryTypes, pastAnnouncements);
+            }).catch(err => {
+                area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`;
+            });
+            break;
+        case 'member-report':
+             google.script.run.withSuccessHandler(renderMemberReport).withFailureHandler(err => { area.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`; }).getMemberReport();
+            break;
+        default:
+          area.innerHTML = `<div class="bg-white p-6 rounded-lg shadow-md"><h3 class="text-xl font-semibold mb-2">${contentType}</h3><p>เนื้อหาส่วนนี้ยังไม่พร้อมใช้งาน</p></div>`;
+    }
+}
+
+    // --- RENDERERS (Member Side) ---
+function renderBuyLottery(lotteryTypes) {
+    const area = document.getElementById('member-content-area');
+
+    // State for the purchase page
+    let activeLottery = lotteryTypes.length > 0 ? lotteryTypes[0] : null;
+    let betSlip = [];
+
+    const updateBetSlip = () => {
+        const itemsContainer = area.querySelector('#betslip-items');
+        const summaryContainer = area.querySelector('#betslip-summary');
+        if (!itemsContainer || !summaryContainer) return;
+
+        if (betSlip.length === 0) {
+            itemsContainer.innerHTML = '<p class="text-center text-gray-500 p-4">ยังไม่มีรายการ</p>';
+            summaryContainer.innerHTML = '';
+            return;
+        }
+
+        itemsContainer.innerHTML = betSlip.map((bet, index) => `
+            <div class="flex justify-between items-center p-2 border-b">
+                <div>
+                    <p class="font-semibold text-gray-800">${bet.typeName}</p>
+                    <p class="font-mono text-lg text-green-700">${bet.number}</p>
+                </div>
+                <div class="flex items-center">
+                    <p class="mr-4">${bet.amount.toFixed(2)} บาท</p>
+                    <button class="remove-bet-btn text-red-500 hover:text-red-700" data-index="${index}"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+        `).join('');
+
+        const totalAmount = betSlip.reduce((sum, bet) => sum + bet.amount, 0);
+        summaryContainer.innerHTML = `
+            <div class="p-3">
+                <div class="flex justify-between font-bold text-lg">
+                    <span>ยอดรวม:</span>
+                    <span>${totalAmount.toFixed(2)} บาท</span>
+                </div>
+                <button id="confirm-purchase-btn" class="w-full mt-3 bg-red-600 text-white py-3 rounded-lg text-lg font-semibold hover:bg-red-700 shadow-md">ยืนยันการซื้อ</button>
+            </div>
+        `;
+    };
+
+    const setActiveLottery = (typeId) => {
+        activeLottery = lotteryTypes.find(lt => lt.id === typeId) || null;
+        area.querySelectorAll('.lottery-type-btn').forEach(btn => {
+            btn.classList.toggle('bg-green-700', btn.dataset.id === typeId);
+            btn.classList.toggle('bg-gray-200', btn.dataset.id !== typeId);
+            btn.classList.toggle('text-white', btn.dataset.id === typeId);
+            btn.classList.toggle('text-gray-800', btn.dataset.id !== typeId);
+        });
+        const numberInput = area.querySelector('#number-input');
+        if (numberInput && activeLottery) {
+            numberInput.placeholder = `เลข ${activeLottery.digits} ตัว`;
+            numberInput.dataset.maxLength = activeLottery.digits;
+            numberInput.value = '';
+        }
+    };
+    
+    // Main HTML Structure
+    area.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2 bg-gray-50 p-4 rounded-xl shadow-lg">
+                <h3 class="text-xl font-semibold mb-3 text-gray-700">เลือกประเภท</h3>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+                    ${lotteryTypes.map(type => `
+                        <button class="lottery-type-btn p-3 rounded-lg font-semibold transition" data-id="${type.id}">${type.name}</button>
+                    `).join('')}
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow-inner mb-4">
+                    <input type="text" id="number-input" readonly class="w-full text-center text-3xl font-mono bg-transparent border-b-2 p-2 focus:outline-none" placeholder="เลือกประเภทก่อน">
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 'ล้าง', 0, 'ลบ'].map(key => `
+                        <button class="keypad-btn p-4 rounded-lg text-xl font-bold ${key === 'ล้าง' || key === 'ลบ' ? 'bg-gray-300' : 'bg-green-600 text-white'} transition hover:opacity-80" data-key="${key}">${key}</button>
+                    `).join('')}
+                </div>
+
+                <div class="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
+                    ${[5, 10, 20, 50, 100, 500].map(val => `
+                        <button class="amount-btn p-2 rounded-lg bg-pink-500 text-white font-semibold hover:bg-pink-600" data-amount="${val}">${val}</button>
+                    `).join('')}
+                </div>
+
+                <div class="flex gap-4">
+                    <input type="number" id="amount-input" class="w-2/3 p-3 border rounded-lg text-lg" placeholder="จำนวนเงิน" min="1">
+                    <button id="add-to-slip-btn" class="w-1/3 bg-blue-600 text-white rounded-lg font-semibold text-lg hover:bg-blue-700">เพิ่ม</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-1 rounded-xl shadow-lg">
+                <h3 class="text-xl font-semibold p-4 border-b text-center bg-gray-100 rounded-t-xl">รายการซื้อ</h3>
+                <div id="betslip-items" class="max-h-96 overflow-y-auto"></div>
+                <div id="betslip-summary" class="border-t"></div>
+            </div>
+        </div>
+    `;
+
+    // --- Logic and Event Handlers ---
+    setActiveLottery(activeLottery?.id);
+    updateBetSlip();
+
+    area.addEventListener('click', e => {
+        const numberInput = area.querySelector('#number-input');
+        const amountInput = area.querySelector('#amount-input');
+
+        // Lottery type selection
+        if (e.target.closest('.lottery-type-btn')) {
+            setActiveLottery(e.target.closest('.lottery-type-btn').dataset.id);
+        }
+
+        // Keypad buttons
+        if (e.target.closest('.keypad-btn')) {
+            const key = e.target.closest('.keypad-btn').dataset.key;
+            if (key === 'ล้าง') {
+                numberInput.value = '';
+            } else if (key === 'ลบ') {
+                numberInput.value = numberInput.value.slice(0, -1);
+            } else if (numberInput.value.length < (numberInput.dataset.maxLength || 2)) {
+                numberInput.value += key;
+            }
+        }
+        
+        // Amount buttons
+        if (e.target.closest('.amount-btn')) {
+            amountInput.value = e.target.closest('.amount-btn').dataset.amount;
+        }
+
+        // Add to Slip button
+        if (e.target.id === 'add-to-slip-btn') {
+            if (!activeLottery) {
+                Swal.fire('ผิดพลาด', 'กรุณาเลือกประเภทสลากก่อน', 'error');
+                return;
+            }
+            const number = numberInput.value;
+            const amount = parseFloat(amountInput.value);
+
+            if (number.length !== parseInt(activeLottery.digits)) {
+                Swal.fire('ผิดพลาด', `กรุณาใส่ตัวเลขให้ครบ ${activeLottery.digits} หลัก`, 'error');
+                return;
+            }
+            if (isNaN(amount) || amount < 1) {
+                Swal.fire('ผิดพลาด', 'กรุณาใส่จำนวนเงินที่ถูกต้อง (ขั้นต่ำ 1 บาท)', 'error');
+                return;
+            }
+
+            betSlip.push({
+                lotteryTypeId: activeLottery.id,
+                typeName: activeLottery.name,
+                number: number,
+                amount: amount
+            });
+            updateBetSlip();
+            numberInput.value = '';
+            amountInput.value = '';
+        }
+        
+        // Remove from slip
+        if (e.target.closest('.remove-bet-btn')) {
+            const index = parseInt(e.target.closest('.remove-bet-btn').dataset.index);
+            betSlip.splice(index, 1);
+            updateBetSlip();
+        }
+
+        // Confirm Purchase
+        if (e.target.id === 'confirm-purchase-btn') {
+            if (betSlip.length === 0) return;
+            const totalCost = betSlip.reduce((sum, bet) => sum + bet.amount, 0);
+
+            Swal.fire({
+                title: 'ยืนยันการซื้อ?',
+                text: `ยอดรวมทั้งหมด ${totalCost.toFixed(2)} บาท`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    showSwalLoading('กำลังบันทึกการซื้อ...');
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            if (res.success) {
+                                Swal.fire('สำเร็จ!', res.message, 'success');
+                                AppState.userInfo.credit = res.newCredit;
+                                updateUI(); // Re-render everything to show new credit
+                                loadMemberContent('buy-lottery'); // Reload this page
+                            } else {
+                                Swal.fire('ผิดพลาด!', res.message, 'error');
+                            }
+                        })
+                        .withFailureHandler(err => Swal.fire('ผิดพลาดร้ายแรง!', err.message, 'error'))
+                        .recordPurchases(betSlip, AppState.userInfo.id);
+                }
+            });
+        }
+    });
+}
+
+    function renderDepositForm(accounts) {
+        const area = document.getElementById('member-content-area');
+        if (accounts.length === 0) {
+            area.innerHTML = `<h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">เติมเครดิต</h3><p class="text-red-600">ไม่พบข้อมูลบัญชีธนาคารสำหรับโอนเงิน กรุณาติดต่อผู้ดูแลระบบ</p>`;
+            return;
+        }
+        const account = accounts[0]; // Assume using the first active account
+
+        area.innerHTML = `<h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">เติมเครดิต</h3>
+            <div class="max-w-md mx-auto p-6 border rounded-xl shadow-xl">
+                <div class="text-center mb-6 border-b pb-4">
+                    <h4 class="text-xl font-bold text-gray-800">โอนเงินเข้าบัญชี:</h4>
+                    <p class="text-lg font-semibold text-green-700">${account.bankName} - ${account.accountNumber}</p>
+                    <p class="text-sm text-gray-600">ชื่อบัญชี: ${account.accountName}</p>
+                </div>
+
+                <div class="flex justify-center mb-6">
+                    <img src="${account.qrCodeUrl}" alt="QR Code" class="w-48 h-48 border rounded-lg shadow-md">
+                </div>
+
+                <form id="deposit-form">
+                    <input type="hidden" name="memberId" value="${AppState.userInfo.id}">
+                    <input type="hidden" name="memberName" value="${AppState.userInfo.name}">
+                    <input type="hidden" name="phone" value="${AppState.userInfo.phone}">
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">ยอดที่ต้องการเติม (บาท)</label>
+                        <select name="amount" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-400" required>
+                            <option value="">เลือกยอดเงิน</option>
+                            <option value="20">20 บาท</option>
+                            <option value="50">50 บาท</option>
+                            <option value="100">100 บาท</option>
+                            <option value="500">500 บาท</option>
+                            <option value="1000">1000 บาท</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-medium mb-2">แนบสลิปการโอน</label>
+                        <input type="file" name="slipFile" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer" required>
+                    </div>
+
+                    <button type="submit" class="w-full bg-green-700 text-white py-3 rounded-lg text-lg font-semibold hover:bg-green-800 shadow-md">แจ้งโอนเงิน</button>
+                </form>
+            </div>
+        `;
+      
+    }
+    
+    function renderWithdrawalForm(area, userId, currentCredit) {
+        area.innerHTML = `<h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">ถอนเครดิต</h3>
+            <div class="max-w-md mx-auto p-6 border rounded-xl shadow-xl">
+                <p class="text-lg font-bold mb-4">เครดิตคงเหลือ: <span class="text-red-500">${parseFloat(currentCredit).toFixed(2)}</span> บาท</p>
+                <form id="withdrawal-form">
+                    <input type="hidden" name="memberId" value="${userId}">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">จำนวนที่ต้องการถอน</label>
+                        <input type="number" name="amount" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-400" min="1" max="${parseFloat(currentCredit).toFixed(2)}" required placeholder="ต้องไม่เกิน ${parseFloat(currentCredit).toFixed(2)} บาท">
+                    </div>
+                    <button type="submit" class="w-full bg-red-600 text-white py-3 rounded-lg text-lg font-semibold hover:bg-red-700 shadow-md">ส่งคำขอถอนเงิน</button>
+                </form>
+            </div>
+        `;
+        
+    }
+
+    function renderHistoryTable(area, data, type) { // ✨ REVISED for Purchase History
+    const isPurchase = type === 'Purchases';
+    
+    // Logic for Transaction History remains the same
+    if (!isPurchase) {
+        area.innerHTML = `<h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">ประวัติการเติม/ถอนเครดิต</h3>
+            <div class="overflow-x-auto bg-gray-50 p-4 rounded-lg">
+                <table class="min-w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-200">
+                        <tr><th class="px-4 py-3">วันที่</th><th class="px-4 py-3">รายการ</th><th class="px-4 py-3">ยอดเงิน</th><th class="px-4 py-3">สถานะ</th><th class="px-4 py-3">หลักฐาน</th></tr>
+                    </thead>
+                    <tbody>
+                        ${data.length === 0 ? `<tr><td colspan="5" class="text-center p-4">ไม่พบประวัติ</td></tr>` : 
+                          data.map(item => {
+                            const actionType = item.Type === 'Deposit' ? 'เติมเครดิต' : 'ถอนเครดิต';
+                            const amountClass = item.Type === 'Deposit' ? 'text-green-600' : 'text-red-600';
+                            const slipLink = item.SlipUrl ? `<a href="${item.SlipUrl}" target="_blank" class="text-blue-500 hover:underline">ดูสลิป</a>` : 'ไม่มี';
+                            let statusClass = 'text-yellow-700 bg-yellow-100';
+                            if (item.Status === 'Approved') statusClass = 'text-green-700 bg-green-100';
+                            if (item.Status === 'Rejected') statusClass = 'text-red-700 bg-red-100';
+
+                            return `<tr class="border-b hover:bg-gray-50">
+                                <td class="px-4 py-2">${formatTimestamp(item.Timestamp)}</td>
+                                <td class="px-4 py-2">${actionType}</td>
+                                <td class="px-4 py-2 font-bold ${amountClass}">${parseFloat(item.Amount).toFixed(2)}</td>
+                                <td class="px-4 py-2"><span class="px-2 py-1 text-xs font-semibold leading-tight ${statusClass} rounded-full">${item.Status}</span></td>
+                                <td class="px-4 py-2">${item.Type === 'Deposit' ? slipLink : '-'}</td>
+                            </tr>`;
+                          }).join('')
+                        }
+                    </tbody>
+                </table>
+            </div>`;
+        return;
+    }
+
+    // New logic for Purchase History
+    const totalWinnings = data.reduce((sum, item) => sum + (item.Status === 'Won' ? item.WinningAmount : 0), 0);
+    area.innerHTML = `<h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">ประวัติการซื้อสลาก</h3>
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded-lg" role="alert">
+            <p class="font-bold">ยอดเงินรางวัลรวม (ที่ยังไม่รวมในเครดิต): ${totalWinnings.toFixed(2)} บาท</p>
+        </div>
+        <div class="overflow-x-auto bg-gray-50 p-4 rounded-lg">
+            <table id="history-table" class="min-w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-200">
+                    <tr>
+                        <th class="px-4 py-3">วันที่ซื้อ</th><th class="px-4 py-3">ประเภท</th><th class="px-4 py-3">เลขที่ซื้อ</th><th class="px-4 py-3">เลขที่ออก</th><th class="px-4 py-3">เครดิตที่ใช้</th><th class="px-4 py-3">รางวัล</th><th class="px-4 py-3">สถานะ</th><th class="px-4 py-3">ดำเนินการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.length === 0 ? `<tr><td colspan="8" class="text-center p-4">ไม่พบประวัติ</td></tr>` : 
+                      data.map(item => {
+                        let statusText = 'รอดำเนินการ';
+                        let statusClass = 'text-gray-700 bg-gray-100';
+                        if (item.Status === 'Won') {
+                            statusText = 'ถูกรางวัล';
+                            statusClass = 'text-green-700 bg-green-100';
+                        } else if (item.Status === 'Lost') {
+                            statusText = 'ไม่ถูกรางวัล';
+                            statusClass = 'text-red-700 bg-red-100';
+                        }
+
+                        let actionCell = '-';
+                        if (item.Status === 'Won') {
+                            if (item.ClaimedTimestamp) {
+                                actionCell = '<span class="text-xs text-gray-500">รับแล้ว</span>';
+                            } else {
+                                actionCell = `<button class="claim-btn bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600" data-purchase-id="${item.PurchaseId}">รับรางวัล</button>`;
+                            }
+                        }
+
+                        return `<tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-2">${formatTimestamp(item.Timestamp)}</td>
+                            <td class="px-4 py-2">${item.LotteryType}</td>
+                            <td class="px-4 py-2 font-bold font-mono">${item.Number}</td>
+                            <td class="px-4 py-2 font-bold font-mono text-blue-600">${item.AnnouncedNumber || '-'}</td>
+                            <td class="px-4 py-2">${item.CreditSpent.toFixed(2)}</td>
+                            <td class="px-4 py-2 font-bold ${item.WinningAmount > 0 ? 'text-green-600' : ''}">${item.WinningAmount > 0 ? item.WinningAmount.toFixed(2) : '-'}</td>
+                            <td class="px-4 py-2"><span class="px-2 py-1 text-xs font-semibold leading-tight ${statusClass} rounded-full">${statusText}</span></td>
+                            <td class="px-4 py-2 text-center">${actionCell}</td>
+                        </tr>`;
+                      }).join('')
+                    }
+                </tbody>
+            </table>
+        </div>`;
+}
+
+// ✨ เพิ่ม Event Listener ใหม่ สำหรับปุ่มรับรางวัล
+document.getElementById('member-content-area').addEventListener('click', function(e) {
+    if (e.target.classList.contains('claim-btn')) {
+        const purchaseId = e.target.dataset.purchaseId;
+        Swal.fire({
+            title: 'ยืนยันการรับรางวัล?',
+            text: "เครดิตจะถูกเพิ่มเข้าบัญชีของคุณทันที",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'ยืนยัน',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showSwalLoading('กำลังดำเนินการ...');
+                google.script.run
+                    .withSuccessHandler(res => {
+                        if (res.success) {
+                            Swal.fire('สำเร็จ!', res.message, 'success');
+                            AppState.userInfo.credit = res.newCredit;
+                            updateUI(); // อัปเดตเครดิตบน top bar
+                            loadMemberContent('purchase-history'); // โหลดประวัติใหม่
+                        } else {
+                            Swal.fire('ผิดพลาด!', res.message, 'error');
+                        }
+                    })
+                    .withFailureHandler(err => Swal.fire('ผิดพลาด!', err.message, 'error'))
+                    .claimWinnings(purchaseId, AppState.userInfo.id);
+            }
+        });
+    }
+});
+
+
+    // --- RENDERERS (Admin Side) ---
+    // (Renderers for Admin side are the same as previously defined and are sufficient for now)
+    function renderMembersTable(members) {
+      const area = document.getElementById('admin-content-area');
+      let tableHtml = `
+        <h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">จัดการสมาชิก</h3>
+        <div class="bg-white p-4 rounded-xl shadow-lg overflow-x-auto">
+          <table class="min-w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-200">
+              <tr>
+                <th class="px-4 py-3">ชื่อ-สกุล (Username)</th>
+                <th class="px-4 py-3">เบอร์โทร</th>
+                <th class="px-4 py-3">เครดิต</th>
+                <th class="px-4 py-3">สถานะ</th>
+                <th class="px-4 py-3">รูปบัตร</th>
+                <th class="px-4 py-3">ดำเนินการ</th>
+              </tr>
+            </thead>
+            <tbody>`;
+      if (members.length === 0) {
+        tableHtml += '<tr><td colspan="6" class="text-center p-4">ไม่มีข้อมูลสมาชิก</td></tr>';
+      } else {
+        members.forEach(member => {
+          const statusClass = member.status === 'Approved' ? 'text-green-700 bg-green-100' : 'text-yellow-700 bg-yellow-100';
+          tableHtml += `
+            <tr class="border-b hover:bg-gray-50">
+              <td class="px-4 py-2">${member.fullName} (<span class="font-mono">${member.username}</span>)</td>
+              <td class="px-4 py-2">${member.phone}</td>
+              <td class="px-4 py-2 font-bold">${parseFloat(member.credit).toFixed(2)}</td>
+              <td class="px-4 py-2"><span class="px-2 py-1 text-xs font-semibold leading-tight ${statusClass} rounded-full">${member.status}</span></td>
+              <td class="px-4 py-2">
+                ${member.idCardPhotoUrl ? `<a href="${member.idCardPhotoUrl}" target="_blank" class="text-blue-500 hover:underline">ดูรูป</a>` : 'ไม่มี'}
+              </td>
+              <td class="px-4 py-2 flex space-x-1">
+                ${member.status === 'Pending' ? `<button class="approve-member-btn bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition" data-id="${member.id}">อนุมัติ</button>` : ''}
+                <button class="edit-member-btn bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600 transition" data-id="${member.id}">แก้ไข</button>
+              </td>
+            </tr>`;
+        });
+      }
+      tableHtml += `</tbody></table></div>`;
+      area.innerHTML = tableHtml;
+    }
+    
+    function renderDepositsTable(deposits) {
+        const area = document.getElementById('admin-content-area');
+        let tableHtml = `
+            <h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">รายการรออนุมัติเติมเงิน</h3>
+            <div class="bg-white p-4 rounded-xl shadow-lg overflow-x-auto">
+                <table class="min-w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-200">
+                        <tr><th class="px-4 py-3">ชื่อสมาชิก</th><th class="px-4 py-3">เบอร์โทร</th><th class="px-4 py-3">จำนวนเงิน</th><th class="px-4 py-3">เวลาแจ้งโอน</th><th class="px-4 py-3">หลักฐาน</th><th class="px-4 py-3">ดำเนินการ</th></tr>
+                    </thead>
+                    <tbody>`;
+        if (deposits.length === 0) {
+            tableHtml += '<tr><td colspan="6" class="text-center p-4">ไม่มีรายการรออนุมัติ</td></tr>';
+        } else {
+            deposits.forEach(d => {
+                tableHtml += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="px-4 py-2">${d.memberName}</td>
+                        <td class="px-4 py-2">${d.phone}</td>
+                        <td class="px-4 py-2 font-bold text-green-600">${parseFloat(d.amount).toFixed(2)} บาท</td>
+                        <td class="px-4 py-2">${formatTimestamp(d.timestamp)}</td>
+                        <td class="px-4 py-2">
+                            <a href="${d.slipUrl}" target="_blank" class="text-blue-500 hover:underline">ดูสลิป</a>
+                        </td>
+                        <td class="px-4 py-2">
+                            <button class="approve-deposit-btn bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600 transition" 
+                                data-id="${d.id}" data-member-id="${d.memberId}" data-amount="${d.amount}">อนุมัติ</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+        tableHtml += `</tbody></table></div>`;
+        area.innerHTML = tableHtml;
+    }
+    
+    function renderWithdrawalsTable(withdrawals) {
+         const area = document.getElementById('admin-content-area');
+        let tableHtml = `
+            <h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">รายการรออนุมัติถอนเงิน</h3>
+            <div class="bg-white p-4 rounded-xl shadow-lg overflow-x-auto">
+                <table class="min-w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-200">
+                        <tr><th class="px-4 py-3">ชื่อสมาชิก</th><th class="px-4 py-3">เบอร์โทร</th><th class="px-4 py-3">ธนาคาร</th><th class="px-4 py-3">จำนวนเงิน</th><th class="px-4 py-3">เวลาแจ้งถอน</th><th class="px-4 py-3">ดำเนินการ</th></tr>
+                    </thead>
+                    <tbody>`;
+        if (withdrawals.length === 0) {
+            tableHtml += '<tr><td colspan="6" class="text-center p-4">ไม่มีรายการรออนุมัติถอนเงิน</td></tr>';
+        } else {
+            withdrawals.forEach(w => {
+                tableHtml += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="px-4 py-2">${w.memberName}</td>
+                        <td class="px-4 py-2">${w.phone}</td>
+                        <td class="px-4 py-2">${w.bankName} (${w.bankAccount})</td>
+                        <td class="px-4 py-2 font-bold text-red-600">${parseFloat(w.amount).toFixed(2)} บาท</td>
+                        <td class="px-4 py-2">${formatTimestamp(w.timestamp)}</td>
+                        <td class="px-4 py-2">
+                            <button class="approve-withdrawal-btn bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600 transition" 
+                                data-id="${w.id}" data-member-id="${w.memberId}" data-amount="${w.amount}">อนุมัติ</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+        tableHtml += `</tbody></table></div>`;
+        area.innerHTML = tableHtml;
+    }
+    /**
+ * (NEW) Renders a table of all deposit history for the admin.
+ */
+function renderDepositHistoryTable(deposits) {
+    const area = document.getElementById('admin-content-area');
+    let tableHtml = `
+        <h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">ประวัติการเติมเงินทั้งหมด</h3>
+        <div class="bg-white p-4 rounded-xl shadow-lg overflow-x-auto">
+            <table class="min-w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-200">
+                    <tr><th class="px-4 py-3">ชื่อสมาชิก</th><th class="px-4 py-3">จำนวนเงิน</th><th class="px-4 py-3">เวลาแจ้งโอน</th><th class="px-4 py-3">หลักฐาน</th><th class="px-4 py-3">สถานะ</th></tr>
+                </thead>
+                <tbody>`;
+    if (deposits.length === 0) {
+        tableHtml += '<tr><td colspan="5" class="text-center p-4">ไม่พบประวัติการเติมเงิน</td></tr>';
+    } else {
+        deposits.forEach(d => {
+            let statusClass = 'text-gray-700 bg-gray-100';
+            if (d.status === 'Approved') statusClass = 'text-green-700 bg-green-100';
+            else if (d.status === 'Pending') statusClass = 'text-yellow-700 bg-yellow-100';
+            else if (d.status !== 'Approved' && d.status !== 'Pending') statusClass = 'text-red-700 bg-red-100';
+
+            tableHtml += `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-2">${d.memberName}</td>
+                    <td class="px-4 py-2 font-bold text-green-600">${parseFloat(d.amount).toFixed(2)} บาท</td>
+                    <td class="px-4 py-2">${formatTimestamp(d.timestamp)}</td>
+                    <td class="px-4 py-2">
+                         <a href="${d.slipUrl}" target="_blank" class="text-blue-500 hover:underline">ดูสลิป</a>
+                    </td>
+                    <td class="px-4 py-2"><span class="px-2 py-1 text-xs font-semibold leading-tight ${statusClass} rounded-full">${d.status}</span></td>
+                </tr>`;
+        });
+    }
+    tableHtml += `</tbody></table></div>`;
+    area.innerHTML = tableHtml;
+}
+
+/**
+ * (NEW) Renders a table of all withdrawal history for the admin.
+ */
+function renderWithdrawalHistoryTable(withdrawals) {
+     const area = document.getElementById('admin-content-area');
+     let tableHtml = `
+        <h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">ประวัติการถอนเงินทั้งหมด</h3>
+        <div class="bg-white p-4 rounded-xl shadow-lg overflow-x-auto">
+            <table class="min-w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-200">
+                    <tr><th class="px-4 py-3">ชื่อสมาชิก</th><th class="px-4 py-3">เบอร์โทร</th><th class="px-4 py-3">ธนาคาร</th><th class="px-4 py-3">จำนวนเงิน</th><th class="px-4 py-3">เวลาแจ้งถอน</th><th class="px-4 py-3">สถานะ</th></tr>
+                </thead>
+                <tbody>`;
+    if (withdrawals.length === 0) {
+        tableHtml += '<tr><td colspan="6" class="text-center p-4">ไม่พบประวัติการถอนเงิน</td></tr>';
+    } else {
+        withdrawals.forEach(w => {
+            let statusClass = 'text-gray-700 bg-gray-100';
+            if (w.status === 'Approved') statusClass = 'text-green-700 bg-green-100';
+            else if (w.status === 'Pending') statusClass = 'text-yellow-700 bg-yellow-100';
+            else if (w.status === 'Rejected') statusClass = 'text-red-700 bg-red-100';
+
+            tableHtml += `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-2">${w.memberName}</td>
+                    <td class="px-4 py-2">${w.phone}</td>
+                    <td class="px-4 py-2">${w.bankAccount}</td>
+                    <td class="px-4 py-2 font-bold text-red-600">${parseFloat(w.amount).toFixed(2)} บาท</td>
+                    <td class="px-4 py-2">${formatTimestamp(w.timestamp)}</td>
+                    <td class="px-4 py-2"><span class="px-2 py-1 text-xs font-semibold leading-tight ${statusClass} rounded-full">${w.status}</span></td>
+                </tr>`;
+        });
+    }
+    tableHtml += `</tbody></table></div>`;
+    area.innerHTML = tableHtml;
+}
+  function renderBankAccounts(accounts) {
+    const area = document.getElementById('admin-content-area');
+    // ส่วนของ Form สำหรับเพิ่ม/แก้ไขข้อมูล
+    let contentHtml = `
+        <h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">จัดการบัญชีธนาคารรับเงิน</h3>
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <form id="bank-form" class="mb-6 border-b pb-6">
+                <h4 class="font-semibold text-xl mb-3 border-b pb-2">เพิ่ม/แก้ไขข้อมูลบัญชี</h4>
+                <input type="hidden" id="bank-id" value="">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="bank-name" placeholder="ชื่อธนาคาร" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-400" required>
+                    <input type="text" id="bank-account-number" placeholder="เลขบัญชี" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-400" required>
+                    <input type="text" id="bank-account-name" placeholder="ชื่อบัญชี" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-400" required>
+                    <input type="url" id="bank-qr-url" placeholder="URL รูป QR Code (เช่น https://placehold.co/...)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-400">
+                </div>
+                <button type="submit" class="mt-4 bg-green-700 text-white py-2 px-6 rounded-lg hover:bg-green-800 font-semibold shadow-md">บันทึกข้อมูล</button>
+            </form>
+            <h4 class="font-semibold text-xl mb-3 border-b pb-2">รายการบัญชี</h4>
+            <div id="bank-list" class="space-y-3">`;
+
+    // ส่วนของรายการบัญชี
+    if (accounts.length === 0) {
+        contentHtml += '<p class="text-gray-500">ยังไม่มีข้อมูลบัญชีธนาคาร</p>';
+    } else {
+        // --- ✨ REVISED: Logic to display status and 'Set Active' button ---
+        accounts.forEach(acc => {
+            const isActive = acc.status === 'Active';
+            const statusClass = isActive ? 'text-green-700 bg-green-100' : 'text-gray-500 bg-gray-100';
+            const buttonHtml = isActive ?
+                '<span class="text-sm font-semibold text-green-600">กำลังใช้งาน</span>' :
+                `<button class="set-active-bank-btn text-blue-600 hover:text-blue-800 text-sm font-semibold" data-id="${acc.id}">เลือกใช้</button>`;
+
+            contentHtml += `<div class="p-4 border rounded-lg flex justify-between items-center bg-white shadow-sm">
+                <div>
+                    <p class="font-bold text-gray-800">${acc.bankName} - ${acc.accountNumber}</p>
+                    <p class="text-sm text-gray-600">ชื่อบัญชี: ${acc.accountName}</p>
+                    <span class="px-2 py-1 mt-1 inline-block text-xs font-semibold leading-tight ${statusClass} rounded-full">${acc.status || 'Inactive'}</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    ${buttonHtml}
+                    <button class="edit-bank-btn text-gray-500 hover:text-gray-700 text-sm font-semibold" data-id='${JSON.stringify(acc)}'>แก้ไข</button>
+                    <button class="delete-bank-btn text-red-600 hover:text-red-800 text-sm font-semibold" data-id="${acc.id}">ลบ</button>
+                </div>
+            </div>`;
+        });
+    }
+    
+    contentHtml += `</div></div>`;
+    area.innerHTML = contentHtml;
+}
+    function renderAnnounceWinnersForm(lotteryTypes, pastAnnouncements) { // ✨ REVISED
+    const area = document.getElementById('admin-content-area');
+    area.innerHTML = `<h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">ประกาศผลรางวัล</h3>
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+            <form id="announce-form" class="space-y-4">
+                <h4 class="font-semibold text-lg border-b pb-2">กรอกเลขรางวัลที่ออก (รอบปัจจุบัน)</h4>
+                ${lotteryTypes.map(type => `
+                    <div>
+                        <label for="${type.id}" class="block font-medium text-gray-700">${type.name} (${type.description})</label>
+                        <input type="text" id="${type.id}" name="${type.id}" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-400 font-mono text-lg" 
+                            placeholder="ใส่ตัวเลข ${type.digits} ตัว" required maxlength="${type.digits}" minlength="${type.digits}" pattern="[0-9]{${type.digits}}">
+                    </div>
+                `).join('')}
+
+                <div class="pt-4 border-t mt-4">
+                    <button type="submit" class="bg-red-600 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-red-700 shadow-md">ประกาศผลและจ่ายรางวัล</button>
+                </div>
+            </form>
+        </div>
+        
+        <h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">ประวัติการประกาศผล</h3>
+        <div class="bg-white p-4 rounded-xl shadow-lg overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left">วันที่ประกาศ</th>
+                        ${lotteryTypes.map(t => `<th class="px-4 py-3">${t.name}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${pastAnnouncements.map(round => `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-2">${formatTimestamp(round.date)}</td>
+                            ${lotteryTypes.map(t => `<td class="px-4 py-2 text-center font-mono font-bold text-blue-600">${round.numbers[t.id] || '-'}</td>`).join('')}
+                        </tr>
+                    `).join('') || `<tr><td colspan="${lotteryTypes.length + 1}" class="text-center p-4">ยังไม่มีประวัติ</td></tr>`}
+                </tbody>
+            </table>
+        </div>
+        `;
+}
+    function renderMemberReport(report) {
+         const area = document.getElementById('admin-content-area');
+         let contentHtml = `
+            <h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">รายงานสรุปสมาชิก</h3>
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h4 class="font-semibold text-lg mb-4">ยอดรวมทั้งหมด</h4>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 bg-green-50 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">ยอดสั่งซื้อรวม</p>
+                        <p class="text-2xl font-bold text-green-700">${parseFloat(report.summary.totalSpent).toFixed(2)} บาท</p>
+                    </div>
+                    <div class="p-4 bg-yellow-50 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">ยอดรางวัลรวม</p>
+                        <p class="text-2xl font-bold text-yellow-700">${parseFloat(report.summary.totalWinnings).toFixed(2)} บาท</p>
+                    </div>
+                </div>
+
+                <h4 class="font-semibold text-lg mb-3 border-t pt-4">ประวัติสมาชิก (ยอดรวม)</h4>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-200">
+                            <tr>
+                                <th class="px-4 py-3">ชื่อ-สกุล</th>
+                                <th class="px-4 py-3">เบอร์โทร</th>
+                                <th class="px-4 py-3">บัญชีธนาคาร</th>
+                                <th class="px-4 py-3 text-right">ยอดซื้อรวม</th>
+                                <th class="px-4 py-3 text-right">ยอดรางวัลรวม</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${report.members.map(m => `
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">${m.FullName}</td>
+                                    <td class="px-4 py-2">${m.Phone}</td>
+                                    <td class="px-4 py-2">${m.BankAcc}</td>
+                                    <td class="px-4 py-2 text-right text-red-700">${parseFloat(m.TotalSpent).toFixed(2)}</td>
+                                    <td class="px-4 py-2 text-right text-green-700">${parseFloat(m.TotalWinnings).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+         `;
+         area.innerHTML = contentHtml;
+    }
+
+
+    // --- EVENT HANDLERS ---
+    
+    function handleRegister(e) {
+        e.preventDefault();
+        showSwalLoading('กำลังสมัครสมาชิก...');
+        
+        const form = e.target;
+        const fileInput = form.querySelector('input[name="idCardPhoto"]');
+        const file = fileInput.files[0];
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        delete data.idCardPhoto; // Remove file placeholder from JSON data
+
+        const callServer = (fileObject) => {
+             google.script.run
+                .withSuccessHandler(res => {
+                    Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+                    if (res.success) {
+                        showPage('login-page');
+                        form.reset();
+                    }
+                })
+                .withFailureHandler(err => {
+                    Swal.fire('เกิดข้อผิดพลาดร้ายแรง!', err.message, 'error');
+                })
+                .registerUser(data, fileObject);
+        };
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fileObject = {
+                    fileName: file.name,
+                    mimeType: file.type,
+                    data: e.target.result // Base64 Data URL
+                };
+                callServer(fileObject);
+            };
+            reader.onerror = function() {
+                 Swal.fire('ผิดพลาด!', 'ไม่สามารถอ่านไฟล์ได้', 'error');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            callServer(null); // No file
+        }
+    }
+    
+    function handleLogin(e) {
+        e.preventDefault();
+        showSwalLoading('กำลังเข้าสู่ระบบ...');
+        const credentials = {
+            username: document.getElementById('login-username').value,
+            password: document.getElementById('login-password').value,
+        };
+        google.script.run
+          .withSuccessHandler(res => {
+            Swal.close();
+            if (res.success) {
+                AppState.isLoggedIn = true;
+                AppState.userRole = res.role;
+                AppState.userInfo = res.memberInfo || {};
+                updateUI();
+            } else {
+                Swal.fire('ผิดพลาด!', res.message, 'error');
+            }
+        })
+        .withFailureHandler(err => {
+            Swal.fire('ผิดพลาด!', err.message, 'error');
+        })
+        .login(credentials);
+    }
+    
+    function handleLogout() {
+        Swal.fire({
+              title: 'ออกจากระบบ', text: 'คุณต้องการออกจากระบบหรือไม่?', icon: 'warning',
+              showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6b7280', confirmButtonText: 'ใช่, ออกจากระบบ', cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                  AppState.isLoggedIn = false;
+                  AppState.userRole = null;
+                  AppState.userInfo = null;
+                  document.getElementById('login-form').reset();
+                  updateUI();
+              }
+        });
+    }
+function handleLotteryTypeFormSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const typeInfo = {
+            id: document.getElementById('type-id').value || null,
+            name: document.getElementById('type-name').value,
+            description: document.getElementById('type-desc').value,
+            digits: document.getElementById('type-digits').value,
+        };
+        showSwalLoading('กำลังบันทึก...');
+        google.script.run.withSuccessHandler(res => {
+            Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+            if (res.success) {
+                loadAdminContent('manage-lottery-types');
+            }
+        }).withFailureHandler(err => {
+            Swal.fire('ผิดพลาด!', err.message, 'error');
+        }).updateLotteryType(typeInfo);
+    }
+
+
+    // --- ✨ FIX: CONSOLIDATED INITIALIZER ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Mobile menu toggle
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('sidebar-open');
+        });
+
+        // Hide sidebar when clicking outside on mobile
+        document.getElementById('main-content').addEventListener('click', (e) => {
+            const sidebar = document.getElementById('sidebar');
+            if (window.innerWidth < 768 && sidebar.classList.contains('sidebar-open')) {
+                 if (!e.target.closest('#sidebar') && !e.target.closest('#menu-toggle')) {
+                    sidebar.classList.remove('sidebar-open');
+                 }
+            }
+        });
+    
+        // Static Navigation links
+        document.getElementById('show-register-link').addEventListener('click', (e) => { e.preventDefault(); showPage('register-page'); });
+        document.getElementById('show-login-link').addEventListener('click', (e) => { e.preventDefault(); showPage('login-page'); });
+
+        // Static Form Handlers
+        document.getElementById('login-form').addEventListener('submit', handleLogin);
+        document.getElementById('register-form').addEventListener('submit', handleRegister);
+        
+        // --- Event Delegation for Dynamic Content ---
+
+        const memberArea = document.getElementById('member-content-area');
+        memberArea.addEventListener('click', function(e) {
+            // This is where you would handle clicks for member content, e.g., the claim button
+            if (e.target.classList.contains('claim-btn')) {
+                // ... logic to handle claim winnings
+            }
+             if (e.target.closest('#buy-lottery-container')) {
+                handleBuyLotteryClicks(e); // Specific handler for the buy lottery page
+            }
+        });
+        
+        // ✨ REVISED SUBMIT HANDLER FOR MEMBER AREA
+        memberArea.addEventListener('submit', e => {
+            if(e.target.id === 'deposit-form') handleDepositSubmit(e);
+            if(e.target.id === 'withdrawal-form') handleWithdrawalSubmit(e);
+        });
+        // Admin Area
+        const adminArea = document.getElementById('admin-content-area');
+        adminArea.addEventListener('click', handleAdminActions);
+        
+        // This is the consolidated submit handler for the admin area
+        adminArea.addEventListener('submit', e => {
+            if(e.target.id === 'bank-form') handleBankFormSubmit(e);
+            if(e.target.id === 'announce-form') handleAnnounceWinners(e);
+            if(e.target.id === 'lottery-type-form') handleLotteryTypeFormSubmit(e); // Added here
+        });
+        
+        // Initial UI Load
+        updateUI();
+    });
+
+   function handleDepositSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const fileInput = form.querySelector('input[name="slipFile"]');
+    const file = fileInput.files[0];
+    
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    data.amount = parseFloat(data.amount); 
+    
+    delete data.slipFile; // <--- ✨ เพิ่มบรรทัดนี้เข้าไป
+
+    if (!file) {
+        Swal.fire('ผิดพลาด!', 'กรุณาแนบสลิปการโอน', 'error');
+        return;
+    }
+    
+    showSwalLoading('กำลังส่งหลักฐานการโอน...');
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const fileObject = {
+            fileName: file.name,
+            mimeType: file.type,
+            data: e.target.result 
+        };
+        google.script.run
+            .withSuccessHandler(res => {
+                Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+                if (res.success) {
+                    form.reset();
+                }
+            })
+            .withFailureHandler(err => {
+                Swal.fire('เกิดข้อผิดพลาด!', err.message, 'error');
+            })
+            .requestCreditDeposit(data, fileObject);
+    };
+    reader.onerror = function() {
+         Swal.fire('ผิดพลาด!', 'ไม่สามารถอ่านไฟล์สลิปได้', 'error');
+    };
+    reader.readAsDataURL(file);
+}
+   function handleWithdrawalSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const amount = parseFloat(form.querySelector('input[name="amount"]').value);
+    const maxCredit = parseFloat(AppState.userInfo.credit);
+    
+    if (isNaN(amount) || amount <= 0 || amount > maxCredit) {
+        Swal.fire('ผิดพลาด!', 'จำนวนเงินถอนไม่ถูกต้องหรือเกินเครดิตคงเหลือ', 'error');
+        return;
+    }
+
+    const withdrawalData = {
+        memberId: AppState.userInfo.id,
+        amount: amount
+    };
+    
+    Swal.fire({
+        title: 'ยืนยันการถอนเงิน',
+        text: `คุณต้องการส่งคำขอถอนเงินจำนวน ${amount.toFixed(2)} บาทใช่หรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'ยืนยัน',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            showSwalLoading('กำลังส่งคำขอ...');
+            google.script.run
+                .withSuccessHandler(res => {
+                    Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+                    if (res.success) {
+                        // ไม่ต้องอัปเดตเครดิตที่หน้าจอ แต่ให้โหลดหน้านี้ใหม่เพื่อ reset form
+                        loadMemberContent('withdraw-credit');
+                    }
+                })
+                .withFailureHandler(err => {
+                    Swal.fire('ผิดพลาด!', err.message, 'error');
+                })
+                .requestWithdrawal(withdrawalData);
+        }
+    });
+}
+function handleAdminActions(e) {
+    // Approve Member
+    if (e.target.matches('.approve-member-btn')) {
+        const memberId = e.target.dataset.id;
+        Swal.fire({
+          title: 'ยืนยันการอนุมัติสมาชิก', text: `คุณต้องการอนุมัติสมาชิกนี้ใช่หรือไม่?`, icon: 'warning',
+          showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            showSwalLoading();
+            google.script.run.withSuccessHandler(res => {
+                Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+                if (res.success) loadAdminContent('manage-members');
+            }).withFailureHandler(err => {
+                Swal.fire('ผิดพลาด!', err.message, 'error');
+            }).approveMember(memberId);
+          }
+        });
+        
+    }
+    
+    // Approve Deposit
+    if (e.target.matches('.approve-deposit-btn')) {
+        const {id, memberId, amount} = e.target.dataset;
+        Swal.fire({
+          title: 'ยืนยันการอนุมัติเติมเงิน', text: `อนุมัติยอดเงิน ${amount} บาท?`, icon: 'warning',
+          showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if(result.isConfirmed) {
+                showSwalLoading();
+                google.script.run.withSuccessHandler(res => {
+                   Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+                   if (res.success) loadAdminContent('approve-deposits');
+                }).withFailureHandler(err => {
+                   Swal.fire('ผิดพลาด!', err.message, 'error');
+                }).approveDeposit(id, memberId, amount);
+            }
+        });
+    }
+    
+    // Approve Withdrawal
+    if (e.target.matches('.approve-withdrawal-btn')) {
+        const {id, memberId, amount} = e.target.dataset;
+        Swal.fire({
+          title: 'ยืนยันการอนุมัติถอนเงิน', text: `อนุมัติยอดเงิน ${amount} บาท?`, icon: 'warning',
+          showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6b7280', confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if(result.isConfirmed) {
+                showSwalLoading();
+                google.script.run.withSuccessHandler(res => {
+                   Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+                   if (res.success) loadAdminContent('approve-withdrawals');
+                }).withFailureHandler(err => {
+                   Swal.fire('ผิดพลาด!', err.message, 'error');
+                }).approveWithdrawal(id, memberId, amount);
+            }
+        });
+    }
+    
+    // Edit Bank Info - Load Data
+    if(e.target.matches('.edit-bank-btn')) {
+        const data = JSON.parse(e.target.dataset.id);
+        document.getElementById('bank-id').value = data.id;
+        document.getElementById('bank-name').value = data.bankName;
+        document.getElementById('bank-account-number').value = data.accountNumber;
+        document.getElementById('bank-account-name').value = data.accountName;
+        document.getElementById('bank-qr-url').value = data.qrCodeUrl;
+        document.getElementById('admin-content-area').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Delete Bank Logic
+    if(e.target.matches('.delete-bank-btn')) {
+        const bankId = e.target.dataset.id;
+        Swal.fire({
+          title: 'ยืนยันการลบ',
+          text: "คุณแน่ใจหรือไม่ที่จะลบบัญชีนี้? การกระทำนี้ไม่สามารถย้อนกลับได้!",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#6b7280',
+          confirmButtonText: 'ใช่, ลบเลย!',
+          cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            showSwalLoading('กำลังลบ...');
+            google.script.run
+                .withSuccessHandler(res => {
+                    Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+                    if (res.success) {
+                        loadAdminContent('manage-banks');
+                    }
+                })
+                .withFailureHandler(err => Swal.fire('ผิดพลาด!', err.message, 'error'))
+                .deleteBankAccount(bankId);
+          }
+        });
+    }
+
+    // ✨ --- ADDED: LOGIC FOR SETTING ACTIVE BANK --- ✨
+    if(e.target.matches('.set-active-bank-btn')) {
+        const bankId = e.target.dataset.id;
+        Swal.fire({
+          title: 'ตั้งเป็นบัญชีใช้งาน?',
+          text: "บัญชีนี้จะถูกใช้เป็นบัญชีหลักสำหรับการรับเงิน",
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#166534',
+          confirmButtonText: 'ยืนยัน',
+          cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            showSwalLoading('กำลังตั้งค่า...');
+            google.script.run
+                .withSuccessHandler(res => {
+                    Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+                    if (res.success) {
+                        loadAdminContent('manage-banks');
+                    }
+                })
+                .withFailureHandler(err => Swal.fire('ผิดพลาด!', err.message, 'error'))
+                .setActiveBankAccount(bankId);
+          }
+        });
+    }
+    // Edit Lottery Type - Load Data
+    if(e.target.matches('.edit-lottery-type-btn')) {
+        const data = JSON.parse(e.target.dataset.id);
+        document.getElementById('type-id').value = data.id;
+        document.getElementById('type-name').value = data.name;
+        document.getElementById('type-desc').value = data.description;
+        document.getElementById('type-digits').value = data.digits;
+        document.getElementById('admin-content-area').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Delete Lottery Type
+    if(e.target.matches('.delete-lottery-type-btn')) {
+        const typeId = e.target.dataset.id;
+        Swal.fire({
+          title: 'ยืนยันการลบ',
+          text: "คุณแน่ใจหรือไม่ที่จะลบประเภทสลากนี้?",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          confirmButtonText: 'ใช่, ลบเลย!',
+          cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            showSwalLoading('กำลังลบ...');
+            google.script.run
+                .withSuccessHandler(res => {
+                    Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+                    if (res.success) {
+                        loadAdminContent('manage-lottery-types');
+                    }
+                })
+                .withFailureHandler(err => Swal.fire('ผิดพลาด!', err.message, 'error'))
+                .deleteLotteryType(typeId);
+          }
+        });
+    }
+
+}
+
+    function handleBankFormSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const bankInfo = {
+            id: document.getElementById('bank-id').value || null,
+            bankName: document.getElementById('bank-name').value,
+            accountNumber: document.getElementById('bank-account-number').value,
+            accountName: document.getElementById('bank-account-name').value,
+            qrCodeUrl: document.getElementById('bank-qr-url').value,
+            status: 'Active'
+        };
+        showSwalLoading('กำลังบันทึก...');
+        google.script.run.withSuccessHandler(res => {
+            Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+            if (res.success) {
+                form.reset();
+                document.getElementById('bank-id').value = '';
+                loadAdminContent('manage-banks');
+            }
+        }).withFailureHandler(err => {
+            Swal.fire('ผิดพลาด!', err.message, 'error');
+        }).updateBankAccount(bankInfo);
+    }
+    
+    function handleAnnounceWinners(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const winningNumbers = Object.fromEntries(formData.entries());
+        
+        Swal.fire({
+              title: 'ยืนยันการประกาศผล', text: 'การประกาศผลจะมีการหักเครดิตผู้ซื้อและจ่ายรางวัลอัตโนมัติ (จำลอง)', icon: 'warning',
+              showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6b7280', confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                showSwalLoading('กำลังประกาศผลและประมวลผลรางวัล...');
+                google.script.run.withSuccessHandler(res => {
+                    Swal.fire(res.success ? 'สำเร็จ!' : 'ผิดพลาด!', res.message, res.success ? 'success' : 'error');
+                    if (res.success) {
+                       // Render winners table here using res.winners (if API returns it)
+                    }
+                }).withFailureHandler(err => {
+                    Swal.fire('ผิดพลาด!', err.message, 'error');
+                }).announceWinners(winningNumbers);
+              }
+        });
+    }
+
+
+/**
+ * (NEW) Renders the admin UI for managing lottery types.
+ */
+function renderLotteryTypesManager(types) {
+    const area = document.getElementById('admin-content-area');
+    let contentHtml = `
+        <h3 class="text-2xl font-semibold mb-4 text-[--primary-color]">จัดการประเภทสลาก</h3>
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <form id="lottery-type-form" class="mb-6 border-b pb-6">
+                <h4 class="font-semibold text-xl mb-3 border-b pb-2">เพิ่ม/แก้ไขประเภทสลาก</h4>
+                <input type="hidden" id="type-id" value="">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input type="text" id="type-name" placeholder="ชื่อประเภท (เช่น เลขวิ่งบน)" class="w-full p-3 border rounded-lg" required>
+                    <input type="text" id="type-desc" placeholder="คำอธิบาย (เช่น 0-9)" class="w-full p-3 border rounded-lg" required>
+                    <input type="number" id="type-digits" placeholder="จำนวนหลัก (เช่น 1)" class="w-full p-3 border rounded-lg" min="1" max="10" required>
+                </div>
+                <button type="submit" class="mt-4 bg-green-700 text-white py-2 px-6 rounded-lg hover:bg-green-800 font-semibold">บันทึกข้อมูล</button>
+            </form>
+            <h4 class="font-semibold text-xl mb-3 border-b pb-2">รายการประเภทสลากทั้งหมด</h4>
+            <div id="type-list" class="space-y-3">`;
+    if (types.length === 0) {
+        contentHtml += '<p class="text-gray-500">ยังไม่มีข้อมูล</p>';
+    } else {
+        types.forEach(type => {
+            contentHtml += `<div class="p-4 border rounded-lg flex justify-between items-center bg-gray-50">
+                <div>
+                    <p class="font-bold text-gray-800">${type.name}</p>
+                    <p class="text-sm text-gray-600">คำอธิบาย: ${type.description} / จำนวน: ${type.digits} หลัก</p>
+                </div>
+                <div>
+                    <button class="edit-lottery-type-btn text-blue-600 hover:text-blue-800 text-sm font-semibold" data-id='${JSON.stringify(type)}'>แก้ไข</button>
+                    <button class="delete-lottery-type-btn text-red-600 hover:text-red-800 text-sm font-semibold ml-2" data-id="${type.id}">ลบ</button>
+                </div>
+            </div>`;
+        });
+    }
+    contentHtml += `</div></div>`;
+    area.innerHTML = contentHtml;
+}
+
+
+</script>
+</body>
+</html>
